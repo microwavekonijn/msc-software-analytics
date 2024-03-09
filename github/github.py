@@ -57,7 +57,6 @@ def get_pull_requests(owner, repo):
             raise Exception(f"GitHub API returned {response.status_code}: {response.json()}")
         data = response.json()
         for pr in data:
-            print(pr)
             if pr['merged_at'] is None: # only consider merged PRs
                 continue
 
@@ -91,4 +90,4 @@ repo = "WordCram"
 pull_requests = get_pull_requests(owner, repo)
 for pr in pull_requests:
     print(pr)
-#insert_pull_requests_to_mongodb(pull_requests)
+insert_pull_requests_to_mongodb(pull_requests)
