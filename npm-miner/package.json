@@ -19,6 +19,7 @@
   "dependencies": {
     "all-package-names": "2.0.880",
     "dotenv": "^16.4.5",
-    "mongodb": "^6.4.0"
+    "mongodb": "^6.4.0",
+    "rxjs": "^7.8.1"
   }
 }

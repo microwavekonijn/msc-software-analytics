@@ -3,6 +3,7 @@ import {MongoClient} from 'mongodb';
 import {Npm} from './utils/npm';
 import {Utils} from './utils/utils';
 import {load} from 'all-package-names';
+import {retryWrapper} from './utils/retry';
 
 dotenv.config();
 
@@ -20,6 +21,10 @@ const debug = (process.env.DEBUG?.toLowerCase().trim() == 'true') ? console.log 
   const db = mongodb.db(process.env.MONGODB_DATABASE);
   const collection = db.collection('npm');
 
+  const getPackage = retryWrapper(Npm.getPackage);
+  const getDownloads = retryWrapper(Npm.getDownloads);
+
+  const LAST_YEAR = new Date(new Date().getTime() - 365 * 24 * 3600 * 1000);
 
   const MAGIC_NUMBER = 1000;
   const total = packageNames.length;
@@ -36,7 +41,7 @@ const debug = (process.env.DEBUG?.toLowerCase().trim() == 'true') ? console.log 
         .map(async name => {
           try {
             debug('Fetching package ' + name);
-            const pkg = await Npm.getPackage(name);
+            const pkg = await getPackage(name);
 
             if (!pkg.repository?.url?.includes('://github.com')) {
               debug('Ignoring ' + name);
@@ -47,10 +52,12 @@ const debug = (process.env.DEBUG?.toLowerCase().trim() == 'true') ? console.log 
             const github = pkg.repository.url;
 
             const lastTime = new Date(Utils.lastTime(pkg.time));
+            if (lastTime < LAST_YEAR) return;
+
             const lastTimeMY = new Date(lastTime.getTime() - 365 * 24 * 3600 * 1000);
 
             debug('Fetching downloads ' + name);
-            const downloads = await Npm.getDownloads(name, `${Utils.formatDate(lastTimeMY)}:${Utils.formatDate(lastTime)}`);
+            const downloads = await getDownloads(name, `${Utils.formatDate(lastTimeMY)}:${Utils.formatDate(lastTime)}`);
 
             if ('error' in downloads) {
               debug('Ignoring ' + name);
