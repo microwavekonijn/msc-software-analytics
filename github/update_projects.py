@@ -1,4 +1,3 @@
-import requests
 import configparser
 from pymongo import MongoClient
 import os
