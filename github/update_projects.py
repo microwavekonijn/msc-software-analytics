@@ -64,7 +64,7 @@ def update_project_with_time(project, avg_time):
     client = MongoClient(mongo_uri)
     db = client[mdb_config['dbname']]
     collection = db.projects
-    collection.update_many({"github": project["github"]}, {"$set": {"average_pull_request_merge_time": avg_time}})
+    collection.update_many({"github": project["github"]}, {"$set": {"amount_of_pull_requests": avg_time}})
 
 
 
@@ -85,17 +85,13 @@ def main():
     projects = get_working_projects()
     # for each project, get the owner and repo
     # then get pull requests
+    total = 0
     for project in projects:
         print(project)
         owner, repo = get_owner_and_repo(project["github"])
         print(owner, repo)
         pull_requests = get_pull_requests(owner, repo)
-        avg_time = 0
-        for pull_request in pull_requests:
-            delta = get_delta_time(pull_request)
-            avg_time += delta.seconds
-        print(avg_time//50)
-        update_project_with_time(project, avg_time//50)
+        update_project_with_time(project, len(list(pull_requests)))
     
 
 def add_documentation_levels():
@@ -105,12 +101,10 @@ def add_documentation_levels():
     client = MongoClient(mongo_uri)
     db = client[mdb_config['dbname']]
     collection = db.projects
-    collection.update_many({}, {"$set": {"comments_in_code": False,
-                                         "wiki_present": False,
-                                         "website_linked": False,
-                                         "README_documentation": False}})
+    collection.update_many({}, {"$set": {"amount_of_pull_requests": 0}})
 
     
 
 if __name__ == "__main__":
+    # add_documentation_levels()
     main()
