@@ -1,0 +1,25 @@
+{
+  "name": "npm-miner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.25",
+    "axios": "^1.6.7",
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "all-package-names": "2.0.880",
+    "dotenv": "^16.4.5",
+    "mongodb": "^6.4.0",
+    "rxjs": "^7.8.1"
+  }
+}
