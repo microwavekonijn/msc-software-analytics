@@ -56,8 +56,8 @@ def fetch_github_urls():
     # Sorting, limiting and projecting the query
     github_urls = collection.find(query).sort("pkg.time.modified", -1).distinct("github")
     
-    # return the number 51 till nmber 100 distinct github URLs
-    return github_urls[:100]
+    # return the url 100 till 200
+    return github_urls[201:300]
 
 
 def get_owner_and_repo(url):
@@ -145,41 +145,20 @@ def filter_repos_with_many_merged_prs(repo_list):
             for pr in data:
                 if pr.get('merged_at') is not None and pr['user']['type'] == 'User':  # Check if PR is merged and made by a human
                     merged_human_prs_count += 1
-            
-            if merged_human_prs_count > 100:
-                qualified_repos.append(repo_url)
-                break
 
             # Check for the next page
             if 'next' in response.links:
                 url = response.links['next']['url']
             else:
                 break
+        
+        # make sure the project is big enough, but not too big
+        if merged_human_prs_count > 100 and merged_human_prs_count < 1000:
+            qualified_repos.append(repo_url)
 
     return qualified_repos
 
-def push_pull_requests_to_mongodb():
-    urls = ["git+https://github.com/AppsFlyerSDK/react-native-appsflyer.git",
-      "git+https://github.com/ArweaveTeam/arweave-js.git",
-      "git+https://github.com/DavidWells/analytics.git",
-      "git+https://github.com/Decathlon/vitamin-web.git",
-      "git+https://github.com/FullHuman/purgecss.git",
-      "git+https://github.com/GoogleChrome/lighthouse-ci.git",
-      "git+https://github.com/GoogleCloudPlatform/opentelemetry-operations-js.git",
-      "git+https://github.com/IBM/openapi-validator.git",
-      "git+https://github.com/Kong/httpsnippet.git",
-      "git+https://github.com/MichalLytek/type-graphql.git",
-      "git+https://github.com/Microsoft/PowerBI-JavaScript.git",
-      "git+https://github.com/Microsoft/appcenter-sdk-react-native.git",
-      "git+https://github.com/Microsoft/code-push.git",
-      "git+https://github.com/Microsoft/fast.git",
-      "git+https://github.com/Modernizr/Modernizr.git",
-      "git+https://github.com/Quramy/ts-graphql-plugin.git",
-      "git+https://github.com/Shopify/quilt.git",
-      "git+https://github.com/Shopify/web-configs.git",
-      "git+https://github.com/Typescript-TDD/ts-auto-mock.git",
-      "git+https://github.com/actions/toolkit.git",
-      "git+https://github.com/adamgibbons/ics.git"]
+def push_pull_requests_to_mongodb(urls):
 
     # Fetch pull requests for each URL and insert them into MongoDB
     for url in urls:
@@ -190,5 +169,33 @@ def push_pull_requests_to_mongodb():
 def find_good_repos():
     good_repos = filter_repos_with_many_merged_prs(fetch_github_urls())
     collection = db.projects
-    # insert list into mongo db
-    collection.insert_one({"good_repos": good_repos})
+
+    print(good_repos)
+
+    # Prepare the list of documents to insert into MongoDB
+    documents_to_insert = []
+    for github_url in good_repos:
+        document = {
+            "github": github_url,
+            "average_pull_request_merge_time": 0,  # Default value, since not calculated
+            "README_documentation": False,  # Default value, assuming not checked
+            "comments_in_code": False,  # Default value, assuming not checked
+            "website_linked": False,  # Default value, assuming not checked
+            "wiki_present": False,  # Default value, assuming not checked
+            "amount_of_pull_requests": 0  # Default value, since not calculated
+        }
+        documents_to_insert.append(document)
+    
+    # Insert documents into the MongoDB collection
+    if documents_to_insert:
+        collection.insert_many(documents_to_insert)
+    else:
+        print("No good repos found to insert.")
+
+def delete_records_for_projects(projects_to_delete):
+    for project in projects_to_delete:
+        regex_pattern = ".*github\.com/" + re.escape(project) + "\.git"
+        db.projects.delete_one({"github": {"$regex": regex_pattern}})
+        db.pull_requests.delete_many({"project": project})
+        print(f"Deleted records for project: {project}")
+    
